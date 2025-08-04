@@ -7,7 +7,7 @@ import numpy as np
 mobilenet_layer = hub.KerasLayer("https://tfhub.dev/google/imagenet/mobilenet_v2_100_224/classification/5")
 
 # Load and preprocess an image
-img_path = 'girl.png'  # Replace with your image path
+img_path = 'cat.jpg'  # Replace with your image path
 img = image.load_img(img_path, target_size=(224, 224))
 img_array = image.img_to_array(img)
 img_array = np.expand_dims(img_array, axis=0) / 255.0  # Normalize the image

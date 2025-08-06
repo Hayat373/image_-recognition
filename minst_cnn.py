@@ -42,11 +42,5 @@ model.fit(train_images, train_labels, epochs=5, batch_size=64, validation_split=
 test_loss, test_acc = model.evaluate(test_images, test_labels)
 print(f"Test accuracy: {test_acc:.4f}")
 
-# Step 6: Visualize some predictions
-predictions = model.predict(test_images[:5])
-for i in range(5):
-    plt.figure(figsize=(2, 2))
-    plt.imshow(test_images[i].reshape(28, 28), cmap='gray')
-    plt.title(f"Predicted: {np.argmax(predictions[i])}, True: {test_labels[i]}")
-    plt.axis('off')
-    plt.show()
+# Save the model
+model.save('mnist_model.h5')

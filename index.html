@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Recognizer</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.18.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.0/dist/mobilenet.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+        }
+        #uploadedImage {
+            max-width: 300px;
+            max-height: 300px;
+            border: 2px solid #333;
+            margin: 20px 0;
+        }
+        #container {
+            text-align: center;
+        }
+        #prediction {
+            margin-top: 20px;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        #probabilities {
+            margin-top: 10px;
+        }
+        button, input {
+            margin: 10px;
+            padding: 10px;
+            font-size: 16px;
+        }
+        table {
+            width: 300px;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <h1>Image Recognizer</h1>
+        <p>Upload an image to identify what it is (e.g., cat, dog, car).</p>
+        <input type="file" id="imageLoader" accept="image/*">
+        <img id="uploadedImage" src="" alt="Uploaded Image" style="display: none;">
+        <button id="predictBtn">Predict Image</button>
+        <div id="prediction"></div>
+        <table id="probabilities">
+            <thead>
+                <tr><th>Class</th><th>Probability</th></tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <script>
+        let model;
+        let loadedImage;
+
+        // Load MobileNet model on page load
+        async function loadModel() {
+            model = await tf.loadLayersModel('https://tfhub.dev/google/tfjs-model/imagenet/mobilenet_v2_100_224/classification/4');
+            console.log('Model loaded');
+            document.getElementById('predictBtn').disabled = false;
+        }
+
+        // Handle image upload
+        document.getElementById('imageLoader').addEventListener('change', handleImageUpload);
+        document.getElementById('predictBtn').addEventListener('click', predictImage);
+
+        function handleImageUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            loadedImage = new Image();
+            loadedImage.onload = () => {
+                document.getElementById('uploadedImage').src = loadedImage.src;
+                document.getElementById('uploadedImage').style.display = 'block';
+            };
+            loadedImage.src = URL.createObjectURL(file);
+            document.getElementById('prediction').innerText = '';
+            document.getElementById('probabilities').querySelector('tbody').innerHTML = '';
+        }
+
+        async function predictImage() {
+            if (!model || !loadedImage) {
+                alert('Please load the model and upload an image first.');
+                return;
+            }
+
+            // Preprocess image
+            const tensor = tf.browser.fromPixels(loadedImage)
+                .resizeNearestNeighbor([224, 224]) // MobileNetV2 expects 224x224
+                .toFloat()
+                .sub(127.5) // Normalize to [-1, 1]
+                .div(127.5)
+                .expandDims(); // Add batch dimension: [1, 224, 224, 3]
+
+            // Make prediction
+            const predictions = await model.predict(tensor).data();
+            const top5 = Array.from(predictions)
+                .map((prob, i) => ({ probability: prob, className: getImageNetClass(i) }))
+                .sort((a, b) => b.probability - a.probability)
+                .slice(0, 5);
+
+            // Display prediction
+            document.getElementById('prediction').innerText = `Predicted: ${top5[0].className} (${(top5[0].probability * 100).toFixed(2)}%)`;
+
+            // Display top 5 probabilities
+            const tbody = document.getElementById('probabilities').querySelector('tbody');
+            tbody.innerHTML = '';
+            top5.forEach(({ className, probability }) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `<td>${className}</td><td>${(probability * 100).toFixed(2)}%</td>`;
+                tbody.appendChild(row);
+            });
+
+            // Clean up
+            tensor.dispose();
+        }
+
+        // Placeholder for ImageNet class names (simplified)
+        function getImageNetClass(index) {
+            // Ideally, load the full ImageNet class list. Using a small subset for brevity.
+            const classes = {
+                281: 'tabby, tabby cat',
+                282: 'tiger cat',
+                287: 'Persian cat',
+                151: 'Chihuahua',
+                207: 'golden retriever',
+                817: 'sports car',
+                404: 'coffee mug',
+                999: 'unknown'
+            };
+            return classes[index] || `Class ${index}`;
+        }
+
+        // Load model when page loads
+        loadModel();
+    </script>
+</body>
+</html>

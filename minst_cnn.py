@@ -17,7 +17,7 @@ test_images = test_images.reshape((10000, 28, 28, 1))
 # Step 2: Build the CNN model
 model = models.Sequential([
     # First convolutional layer: 32 filters, 3x3 kernel, ReLU activation
-    layers.Conv2D(32, (3, 3), activation='relu', input_shape=(28, 28, 1)),
+    layers.Conv2D(32, (3, 3), activationgit='relu', input_shape=(28, 28, 1)),
     layers.MaxPooling2D((2, 2)),  # Pooling to reduce size
     # Second convolutional layer: 64 filters
     layers.Conv2D(64, (3, 3), activation='relu'),
